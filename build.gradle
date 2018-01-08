@@ -1,0 +1,95 @@
+/* --------------------------------------------------------------------------------------- */
+/* Plugins configuration   --------------------------------------------------------------- */
+/* --------------------------------------------------------------------------------------- */ 
+apply plugin: 'java'
+apply plugin: "net.ltgt.apt"
+
+buildscript {
+    ext {
+        ltgtPluginVersion = '0.13'
+    }    
+    repositories {      
+        mavenCentral()        
+        /*maven {
+          name "Corporate nexus repository"
+          url "${mavenRepoUrl}/maven-public"
+        } */    
+    }
+    dependencies {        
+        classpath "net.ltgt.gradle:gradle-apt-plugin:0.13"
+    }
+}
+
+// Misc project configuration
+sourceCompatibility = 1.8
+
+// Gradle wrapper configuration
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.4'
+}
+
+/* --------------------------------------------------------------------------------------- */
+/* Dependencies configuration ------------------------------------------------------------ */
+/* --------------------------------------------------------------------------------------- */ 
+ext {	
+	springVersion = '5.0.2.RELEASE'
+	javaLanguageLevel = '1.8'
+	mapstructVersion = '1.2.0.Final'
+	lombokVersion = '1.16.18'
+    hibernateJpaVersion = '1.0.0.Final'	
+	javaGeneratedSources = file("src/generated/java") 
+}
+
+dependencies {        
+        
+    /* -------------- Misc -----------------------------------------------------*/
+    compile "org.springframework:spring-context:${springVersion}"
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:${hibernateJpaVersion}"
+    
+    /* ------------ Mapstruct ------------------------------------------------------*/
+    compile("org.mapstruct:mapstruct-jdk8:${mapstructVersion}")
+    
+    /* ------------ APT plugin config ----------------------------------------------*/    
+    apt "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+    apt "org.projectlombok:lombok:${lombokVersion}"   
+    
+    /* ------------- JUnit ---------------------------------------------------------- */
+    testCompile "junit:junit:4.12"
+          
+}
+
+/* Compiler processors */
+compileJava {
+    aptOptions.processors = [        
+        'org.mapstruct.ap.MappingProcessor',
+        'lombok.launch.AnnotationProcessorHider$AnnotationProcessor'          
+    ]
+    options.compilerArgs << "-s"
+    options.compilerArgs << "$projectDir/src/generated/java"
+    options.compilerArgs << "-Amapstruct.defaultComponentModel=spring"   
+    
+    doFirst {        
+        file(new File(projectDir, "/src/generated/java")).mkdirs()
+    }    
+}
+ 
+clean.doLast {
+    // clean-up generated sources directory
+    file(new File(projectDir, "/src/generated/java/com")).deleteDir()
+}
+sourceSets {
+    generated {
+        java {
+            srcDir "$projectDir/src/generated/java"
+        }
+    }
+}
+
+repositories {
+    mavenCentral()        
+    /*maven {
+        name "Corporate nexus repo"
+         url "${mavenRepoUrl}/maven-public"
+    } */  
+}
